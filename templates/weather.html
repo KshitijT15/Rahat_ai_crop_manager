@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+{% block title %}Weather & Advisory — Rahat-AI{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div class="page-title">
+    <h1>⛅ Weather & Crop Advisory</h1>
+    <p>Real-time weather data with AI farming recommendations</p>
+  </div>
+  <span style="background:rgba(52,152,219,0.15); color:#3498db; border-radius:6px; padding:4px 12px; font-size:11px; font-weight:600;">OpenWeather API</span>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="glass-card fade-up mb-3">
+      <div style="font-size:13px; font-weight:600; margin-bottom:16px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Search Location</div>
+
+      <div class="mb-3">
+        <label class="form-label">City Name</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" class="form-control" id="cityInput" placeholder="e.g., Pune, Mumbai, Delhi..." />
+          <button class="btn-outline-green" onclick="fetchWeatherByCity()" style="white-space:nowrap;">Search</button>
+        </div>
+      </div>
+
+      <div style="text-align:center; color:var(--text-muted); font-size:12px; margin-bottom:12px;">— or —</div>
+
+      <button class="btn-outline-green" style="width:100%;" onclick="fetchWeatherByGPS()">
+        <i class="fas fa-location-arrow me-2"></i>Use My Location
+      </button>
+
+      <div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
+        <label class="form-label">Get Advisory For Crop</label>
+        <select class="form-select" id="advisoryCrop">
+          {% set crops = ['Tomato','Rice','Wheat','Maize','Cotton','Sugarcane','Onion','Potato','Banana','Mango'] %}
+          {% for c in crops %}<option>{{ c }}</option>{% endfor %}
+        </select>
+        <button class="btn-green" style="width:100%; margin-top:10px;" onclick="getAdvisory()" id="advisoryBtn" disabled>
+          <i class="fas fa-robot me-2"></i>Get AI Advisory
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Cities -->
+    <div class="glass-card fade-up" style="animation-delay:0.1s;">
+      <div style="font-size:13px; font-weight:600; margin-bottom:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Quick Cities</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+        {% for city in ['Mumbai','Delhi','Bengaluru','Pune','Hyderabad','Chennai','Kolkata','Ahmedabad','Nagpur','Nashik'] %}
+        <button onclick="quickCity('{{ city }}')"
+          style="padding:8px 10px; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:8px; color:var(--text-muted); font-size:12px; cursor:pointer; transition:all 0.2s; font-family:'Sora',sans-serif; text-align:left;"
+          onmouseover="this.style.borderColor='rgba(46,204,113,0.4)'; this.style.color='var(--cream)'"
+          onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'">
+          🏙️ {{ city }}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div id="weatherLoading" style="display:none;">
+      <div class="glass-card" style="text-align:center; padding:60px;">
+        <div class="spinner-green" style="margin:0 auto 16px;"></div>
+        <div style="font-size:14px; color:var(--text-muted);">Fetching weather data...</div>
+      </div>
+    </div>
+
+    <div id="weatherResult" style="display:none;" class="fade-up">
+      <!-- Current Weather -->
+      <div class="glass-card mb-3">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+          <div>
+            <div id="weatherLocation" style="font-size:22px; font-weight:800;"></div>
+            <div id="weatherDesc" style="font-size:14px; color:var(--text-muted); margin-top:4px;"></div>
+          </div>
+          <div style="text-align:right;">
+            <div id="weatherTemp" style="font-size:52px; font-weight:800; line-height:1; color:var(--green-bright);"></div>
+            <div id="weatherFeels" style="font-size:12px; color:var(--text-muted); margin-top:4px;"></div>
+          </div>
+        </div>
+
+        <div class="row g-3 mt-3">
+          <div class="col-6 col-sm-3">
+            <div style="text-align:center; padding:12px; background:rgba(255,255,255,0.03); border-radius:10px;">
+              <div style="font-size:18px; margin-bottom:4px;">💧</div>
+              <div id="weatherHumid" style="font-size:16px; font-weight:700; color:#3498db;"></div>
+              <div style="font-size:10px; color:var(--text-muted);">Humidity</div>
+            </div>
+          </div>
+          <div class="col-6 col-sm-3">
+            <div style="text-align:center; padding:12px; background:rgba(255,255,255,0.03); border-radius:10px;">
+              <div style="font-size:18px; margin-bottom:4px;">💨</div>
+              <div id="weatherWind" style="font-size:16px; font-weight:700; color:#1abc9c;"></div>
+              <div style="font-size:10px; color:var(--text-muted);">Wind km/h</div>
+            </div>
+          </div>
+          <div class="col-6 col-sm-3">
+            <div style="text-align:center; padding:12px; background:rgba(255,255,255,0.03); border-radius:10px;">
+              <div style="font-size:18px; margin-bottom:4px;">☁️</div>
+              <div id="weatherClouds" style="font-size:16px; font-weight:700; color:#95a5a6;"></div>
+              <div style="font-size:10px; color:var(--text-muted);">Cloud Cover</div>
+            </div>
+          </div>
+          <div class="col-6 col-sm-3">
+            <div style="text-align:center; padding:12px; background:rgba(255,255,255,0.03); border-radius:10px;">
+              <div style="font-size:18px; margin-bottom:4px;">👁️</div>
+              <div id="weatherVis" style="font-size:16px; font-weight:700; color:#f39c12;"></div>
+              <div style="font-size:10px; color:var(--text-muted);">Visibility km</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px solid var(--border); font-size:12px; color:var(--text-muted);">
+          <span>🌅 Sunrise: <strong id="sunriseVal" style="color:var(--cream);"></strong></span>
+          <span>🌇 Sunset: <strong id="sunsetVal" style="color:var(--cream);"></strong></span>
+          <span>🌡️ Pressure: <strong id="pressureVal" style="color:var(--cream);"></strong> hPa</span>
+        </div>
+      </div>
+
+      <!-- 5-Day Forecast -->
+      <div class="glass-card mb-3">
+        <div style="font-size:13px; font-weight:600; margin-bottom:16px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">5-Day Forecast</div>
+        <div id="forecastContainer" style="display:grid; grid-template-columns:repeat(5,1fr); gap:10px;"></div>
+      </div>
+
+      <!-- Advisory -->
+      <div id="advisorySection" style="display:none;" class="glass-card">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+          <div style="width:36px; height:36px; background:rgba(155,89,182,0.2); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px;">🤖</div>
+          <div>
+            <div style="font-size:13px; font-weight:700;">AI Crop Advisory</div>
+            <div id="advisorySubtitle" style="font-size:11px; color:var(--text-muted);"></div>
+          </div>
+          <div id="suitabilityBadge" style="margin-left:auto;"></div>
+        </div>
+        <div id="advisoryContent"></div>
+      </div>
+    </div>
+
+    <div id="weatherPlaceholder" class="glass-card" style="text-align:center; padding:80px 40px;">
+      <div style="font-size:64px; margin-bottom:16px;">🌍</div>
+      <div style="font-size:15px; font-weight:600; margin-bottom:8px;">Search Your Location</div>
+      <div style="font-size:13px; color:var(--text-muted);">Enter a city name or use GPS to get real-time weather data</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentWeather = null;
+
+function quickCity(city) {
+  document.getElementById('cityInput').value = city;
+  fetchWeatherByCity();
+}
+
+async function fetchWeatherByCity() {
+  const city = document.getElementById('cityInput').value.trim();
+  if (!city) { showToast('Please enter a city name', 'error'); return; }
+  await fetchWeather({city});
+}
+
+async function fetchWeatherByGPS() {
+  if (!navigator.geolocation) { showToast('GPS not available', 'error'); return; }
+  navigator.geolocation.getCurrentPosition(
+    pos => fetchWeather({lat: pos.coords.latitude, lon: pos.coords.longitude}),
+    () => showToast('GPS access denied', 'error')
+  );
+}
+
+async function fetchWeather(params) {
+  document.getElementById('weatherPlaceholder').style.display = 'none';
+  document.getElementById('weatherResult').style.display = 'none';
+  document.getElementById('weatherLoading').style.display = 'block';
+  document.getElementById('advisorySection').style.display = 'none';
+
+  let success = false;
+  try {
+    const res = await fetch('/api/weather', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(params)
+    });
+    const data = await res.json();
+    if (data.error) {
+      showToast(data.error, 'error');
+      document.getElementById('weatherPlaceholder').style.display = 'block';
+      document.getElementById('advisoryBtn').disabled = true;
+      return;
+    }
+
+    currentWeather = data;
+    renderWeather(data);
+    document.getElementById('advisoryBtn').disabled = false;
+    showToast(`Weather loaded for ${data.city}`);
+    success = true;
+  } catch(e) {
+    showToast('Failed to fetch weather', 'error');
+    document.getElementById('weatherPlaceholder').style.display = 'block';
+    document.getElementById('advisoryBtn').disabled = true;
+  } finally {
+    document.getElementById('weatherLoading').style.display = 'none';
+    if (success) {
+      document.getElementById('weatherResult').style.display = 'block';
+    }
+  }
+}
+
+function renderWeather(w) {
+  document.getElementById('weatherLocation').textContent = `${w.city}, ${w.country}`;
+  document.getElementById('weatherDesc').textContent = `${w.description}`;
+  document.getElementById('weatherTemp').textContent = `${w.temperature}°`;
+  document.getElementById('weatherFeels').textContent = `Feels like ${w.feels_like}°C`;
+  document.getElementById('weatherHumid').textContent = w.humidity + '%';
+  document.getElementById('weatherWind').textContent = w.wind_speed;
+  document.getElementById('weatherClouds').textContent = w.clouds + '%';
+  document.getElementById('weatherVis').textContent = w.visibility;
+  document.getElementById('sunriseVal').textContent = w.sunrise;
+  document.getElementById('sunsetVal').textContent = w.sunset;
+  document.getElementById('pressureVal').textContent = w.pressure;
+
+  const fc = document.getElementById('forecastContainer');
+  fc.innerHTML = (w.forecast || []).map(f => {
+    const d = new Date(f.date);
+    const day = d.toLocaleDateString('en-IN', {weekday:'short'});
+    const dt = d.toLocaleDateString('en-IN', {month:'short', day:'numeric'});
+    return `
+      <div style="text-align:center; background:rgba(255,255,255,0.03); border-radius:10px; padding:12px 6px;">
+        <div style="font-size:11px; font-weight:600; color:var(--text-muted);">${day}</div>
+        <div style="font-size:10px; color:var(--text-muted); margin-bottom:8px;">${dt}</div>
+        <img src="https://openweathermap.org/img/wn/${f.icon}.png" width="40" style="filter:brightness(1.2);" onerror="this.style.display='none'" />
+        <div style="font-size:14px; font-weight:700; margin-top:4px;">${f.temp_max}°</div>
+        <div style="font-size:11px; color:var(--text-muted);">${f.temp_min}°</div>
+        <div style="font-size:9px; color:#3498db; margin-top:6px;">${f.humidity}% 💧</div>
+      </div>`;
+  }).join('');
+}
+
+async function getAdvisory() {
+  if (!currentWeather) return;
+  const crop = document.getElementById('advisoryCrop').value;
+  const btn = document.getElementById('advisoryBtn');
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Getting Advisory...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/crop-advisory', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({weather: currentWeather, crop})
+    });
+    const data = await res.json();
+    if (data.error) { showToast(data.error, 'error'); return; }
+
+    renderAdvisory(data, crop);
+    document.getElementById('advisorySection').style.display = 'block';
+    showToast('AI advisory generated!');
+  } catch(e) {
+    showToast('Advisory failed', 'error');
+  } finally {
+    btn.innerHTML = '<i class="fas fa-robot me-2"></i>Get AI Advisory';
+    btn.disabled = false;
+  }
+}
+
+function renderAdvisory(data, crop) {
+  document.getElementById('advisorySubtitle').textContent = `${crop} farming advisory based on current conditions`;
+
+  const suitColors = { Excellent:'#27ae60', Good:'var(--green-bright)', Fair:'var(--gold)', Poor:'#e74c3c' };
+  const suitability = data.overall_suitability || 'Good';
+  document.getElementById('suitabilityBadge').innerHTML =
+    `<span style="background:${(suitColors[suitability]||'#3498db')}22; color:${suitColors[suitability]||'#3498db'}; border-radius:6px; padding:5px 14px; font-size:12px; font-weight:700;">${suitability}</span>`;
+
+  let html = '';
+  if (data.immediate_actions && data.immediate_actions.length) {
+    html += `<div style="margin-bottom:14px;">
+      <div style="font-size:11px; color:var(--green-bright); font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Immediate Actions</div>
+      ${data.immediate_actions.map(a => `<div style="font-size:13px; padding:6px 0; color:var(--cream); border-bottom:1px solid rgba(255,255,255,0.04);">✅ ${a}</div>`).join('')}
+    </div>`;
+  }
+  if (data.irrigation_advice) {
+    html += `<div style="margin-bottom:14px; padding:12px; background:rgba(52,152,219,0.08); border-radius:10px; border-left:3px solid #3498db;">
+      <div style="font-size:11px; color:#3498db; font-weight:700; margin-bottom:4px;">💧 Irrigation</div>
+      <div style="font-size:13px; color:var(--cream);">${data.irrigation_advice}</div>
+    </div>`;
+  }
+  const riskColors = { Low:'#27ae60', Medium:'var(--gold)', High:'#e74c3c' };
+  if (data.pest_disease_risk) {
+    const risk = data.pest_disease_risk.split(' ')[0];
+    html += `<div style="margin-bottom:14px; padding:12px; background:rgba(231,76,60,0.06); border-radius:10px; border-left:3px solid ${riskColors[risk]||'#e67e22'};">
+      <div style="font-size:11px; color:${riskColors[risk]||'#e67e22'}; font-weight:700; margin-bottom:4px;">🐛 Pest/Disease Risk: ${risk || ''}</div>
+      <div style="font-size:13px; color:var(--cream);">${data.pest_disease_risk}</div>
+    </div>`;
+  }
+  if (data.harvesting_advice) {
+    html += `<div style="font-size:13px; padding:8px 0; color:var(--text-muted);">🌾 <strong>Harvest:</strong> ${data.harvesting_advice}</div>`;
+  }
+  document.getElementById('advisoryContent').innerHTML = html;
+}
+</script>
+{% endblock %}

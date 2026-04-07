@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% block title %}Fertilizer AI — Rahat-AI{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div class="page-title">
+    <h1>🧪 Fertilizer AI Advisor</h1>
+    <p>Get AI-powered fertilizer recommendations using Groq LLaMA 3</p>
+  </div>
+  <span style="background:rgba(155,89,182,0.15); color:#9b59b6; border-radius:6px; padding:4px 12px; font-size:11px; font-weight:600;">Powered by Groq</span>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="glass-card fade-up">
+      <div style="font-size:13px; font-weight:600; margin-bottom:18px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Farm Details</div>
+
+      <div class="mb-3">
+        <label class="form-label">Crop Type</label>
+        <select class="form-select" id="fert_crop">
+          {% set crops = ['Tomato','Rice','Maize','Wheat','Cotton','Sugarcane','Potato','Onion','Banana','Mango','Grapes','Chickpea','Soybean','Groundnut','Sunflower'] %}
+          {% for c in crops %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Farm Area</label>
+        <select class="form-select" id="fert_area">
+          <option>0.5 acre</option><option selected>1 acre</option>
+          <option>2 acres</option><option>5 acres</option><option>10 acres</option>
+        </select>
+      </div>
+
+      <div style="font-size:13px; font-weight:600; margin-bottom:14px; margin-top:8px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Current Soil NPK (kg/ha)</div>
+
+      <div class="row g-2 mb-3">
+        <div class="col-4">
+          <label class="form-label">N</label>
+          <input type="number" class="form-control" id="fert_N" value="60" min="0" max="300" />
+        </div>
+        <div class="col-4">
+          <label class="form-label">P</label>
+          <input type="number" class="form-control" id="fert_P" value="30" min="0" max="300" />
+        </div>
+        <div class="col-4">
+          <label class="form-label">K</label>
+          <input type="number" class="form-control" id="fert_K" value="40" min="0" max="300" />
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Soil pH</label>
+        <input type="number" class="form-control" id="fert_ph" value="6.5" step="0.1" min="4" max="9" />
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Issue / Goal</label>
+        <textarea class="form-control" id="fert_issue" rows="3"
+          placeholder="e.g., yellowing leaves, low yield, preparing for transplant..."
+          style="resize:none;">General fertilizer recommendation for healthy growth</textarea>
+      </div>
+
+      <button class="btn-green" style="width:100%;" onclick="getFertilizer()" id="fertBtn">
+        <i class="fas fa-robot me-2"></i>Get AI Recommendation
+      </button>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div id="fertLoading" style="display:none;">
+      <div class="glass-card" style="text-align:center; padding:60px;">
+        <div class="spinner-green" style="margin:0 auto 16px;"></div>
+        <div style="font-size:14px; color:var(--text-muted); margin-bottom:8px;">Consulting AI agronomist...</div>
+        <div style="font-size:12px; color:var(--text-muted);">Analyzing soil composition & crop requirements</div>
+      </div>
+    </div>
+
+    <div id="fertResult" style="display:none;" class="fade-up">
+      <!-- Summary -->
+      <div class="glass-card mb-3">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+          <div style="width:36px; height:36px; background:rgba(155,89,182,0.2); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px;">🤖</div>
+          <div>
+            <div style="font-size:13px; font-weight:700;">AI Agronomist Summary</div>
+            <div style="font-size:11px; color:var(--text-muted);">Powered by Groq LLaMA 3</div>
+          </div>
+        </div>
+        <div id="fertSummary" style="font-size:13px; line-height:1.8; color:var(--cream);"></div>
+      </div>
+
+      <!-- Deficiencies -->
+      <div class="glass-card mb-3" id="deficiencyCard" style="display:none;">
+        <div style="font-size:13px; font-weight:600; margin-bottom:14px; color:#e74c3c; text-transform:uppercase; letter-spacing:0.5px;">⚠️ Identified Deficiencies</div>
+        <div id="deficiencyList" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+      </div>
+
+      <!-- Primary Fertilizers -->
+      <div class="glass-card mb-3" id="primaryCard" style="display:none;">
+        <div style="font-size:13px; font-weight:600; margin-bottom:16px; color:var(--green-bright); text-transform:uppercase; letter-spacing:0.5px;">🧪 Recommended Fertilizers</div>
+        <div id="primaryList"></div>
+      </div>
+
+      <!-- Organic Options -->
+      <div class="glass-card mb-3" id="organicCard" style="display:none;">
+        <div style="font-size:13px; font-weight:600; margin-bottom:16px; color:var(--gold); text-transform:uppercase; letter-spacing:0.5px;">🌿 Organic Alternatives</div>
+        <div id="organicList"></div>
+      </div>
+
+      <!-- Schedule -->
+      <div class="glass-card mb-3" id="scheduleCard" style="display:none;">
+        <div style="font-size:13px; font-weight:600; margin-bottom:16px; color:#3498db; text-transform:uppercase; letter-spacing:0.5px;">📅 Application Schedule</div>
+        <div id="scheduleList"></div>
+      </div>
+
+      <!-- Precautions + Cost -->
+      <div class="row g-3">
+        <div class="col-md-8" id="precautionCard" style="display:none;">
+          <div class="glass-card h-100">
+            <div style="font-size:13px; font-weight:600; margin-bottom:14px; color:#e67e22; text-transform:uppercase; letter-spacing:0.5px;">⚡ Precautions</div>
+            <div id="precautionList"></div>
+          </div>
+        </div>
+        <div class="col-md-4" id="costCard" style="display:none;">
+          <div class="glass-card h-100" style="text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">Est. Cost</div>
+            <div id="costValue" style="font-size:24px; font-weight:800; color:var(--gold);"></div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Approximate</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="fertPlaceholder" class="glass-card" style="text-align:center; padding:80px 40px;">
+      <div style="font-size:64px; margin-bottom:16px;">🧑‍🌾</div>
+      <div style="font-size:15px; font-weight:600; margin-bottom:8px;">AI Agronomist Ready</div>
+      <div style="font-size:13px; color:var(--text-muted);">Fill in your farm details and get personalized fertilizer advice</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function getFertilizer() {
+  const payload = {
+    crop: document.getElementById('fert_crop').value,
+    soil_n: parseFloat(document.getElementById('fert_N').value),
+    soil_p: parseFloat(document.getElementById('fert_P').value),
+    soil_k: parseFloat(document.getElementById('fert_K').value),
+    ph: parseFloat(document.getElementById('fert_ph').value),
+    issue: document.getElementById('fert_issue').value,
+    area: document.getElementById('fert_area').value
+  };
+
+  document.getElementById('fertPlaceholder').style.display = 'none';
+  document.getElementById('fertResult').style.display = 'none';
+  document.getElementById('fertLoading').style.display = 'block';
+
+  const btn = document.getElementById('fertBtn');
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/fertilizer-recommendation', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.error) { showToast(data.error, 'error'); return; }
+
+    renderFertResult(data);
+    showToast('AI recommendation generated!');
+  } catch(e) {
+    showToast('Request failed: ' + e.message, 'error');
+  } finally {
+    document.getElementById('fertLoading').style.display = 'none';
+    document.getElementById('fertResult').style.display = 'block';
+    btn.disabled = false;
+  }
+}
+
+function renderFertResult(data) {
+  document.getElementById('fertSummary').textContent = data.summary || 'Recommendation generated.';
+
+  // Deficiencies
+  if (data.deficiencies && data.deficiencies.length) {
+    document.getElementById('deficiencyCard').style.display = 'block';
+    document.getElementById('deficiencyList').innerHTML = data.deficiencies.map(d =>
+      `<span style="background:rgba(231,76,60,0.1); border:1px solid rgba(231,76,60,0.3); color:#e74c3c; border-radius:20px; padding:4px 12px; font-size:12px;">${d}</span>`
+    ).join('');
+  }
+
+  // Primary Fertilizers
+  if (data.primary_fertilizers && data.primary_fertilizers.length) {
+    document.getElementById('primaryCard').style.display = 'block';
+    document.getElementById('primaryList').innerHTML = data.primary_fertilizers.map(f => `
+      <div style="background:rgba(46,204,113,0.05); border:1px solid rgba(46,204,113,0.15); border-radius:10px; padding:14px; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+          <div style="font-size:14px; font-weight:700; color:var(--green-bright);">${f.name}</div>
+          <span style="background:rgba(46,204,113,0.15); color:var(--green-bright); border-radius:6px; padding:3px 10px; font-size:12px; font-weight:600;">${f.quantity}</span>
+        </div>
+        <div style="font-size:12px; color:var(--text-muted);">⏰ ${f.timing} &nbsp;·&nbsp; 📋 ${f.method}</div>
+      </div>`).join('');
+  }
+
+  // Organic
+  if (data.organic_options && data.organic_options.length) {
+    document.getElementById('organicCard').style.display = 'block';
+    document.getElementById('organicList').innerHTML = data.organic_options.map(o => `
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); flex-wrap:wrap; gap:8px;">
+        <div>
+          <div style="font-size:13px; font-weight:600;">${o.name}</div>
+          <div style="font-size:12px; color:var(--text-muted);">${o.benefit}</div>
+        </div>
+        <span style="background:rgba(240,192,64,0.1); color:var(--gold); border-radius:6px; padding:3px 10px; font-size:12px;">${o.quantity}</span>
+      </div>`).join('');
+  }
+
+  // Schedule
+  if (data.application_schedule && data.application_schedule.length) {
+    document.getElementById('scheduleCard').style.display = 'block';
+    document.getElementById('scheduleList').innerHTML = data.application_schedule.map((s, i) => `
+      <div style="display:flex; gap:14px; margin-bottom:14px;">
+        <div style="display:flex; flex-direction:column; align-items:center;">
+          <div style="width:28px; height:28px; border-radius:50%; background:rgba(52,152,219,0.2); border:2px solid #3498db; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#3498db; flex-shrink:0;">${i+1}</div>
+          ${i < data.application_schedule.length-1 ? '<div style="width:2px; flex:1; background:rgba(52,152,219,0.2); margin-top:4px; min-height:20px;"></div>' : ''}
+        </div>
+        <div style="padding-bottom:14px;">
+          <div style="font-size:12px; font-weight:700; color:#3498db;">${s.stage} · ${s.week}</div>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">${s.fertilizers}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  // Precautions
+  if (data.precautions && data.precautions.length) {
+    document.getElementById('precautionCard').style.display = 'block';
+    document.getElementById('precautionList').innerHTML = data.precautions.map(p =>
+      `<div style="font-size:12px; color:var(--text-muted); padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.04);">• ${p}</div>`
+    ).join('');
+  }
+
+  // Cost
+  if (data.estimated_cost) {
+    document.getElementById('costCard').style.display = 'block';
+    document.getElementById('costValue').textContent = data.estimated_cost;
+  }
+}
+</script>
+{% endblock %}

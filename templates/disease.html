@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% block title %}Disease Detection — Rahat-AI{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div class="page-title">
+    <h1>🍅 Disease Detection</h1>
+    <p>Upload a tomato leaf image for AI-powered disease diagnosis</p>
+  </div>
+  <span class="badge-green">ResNet50 Model</span>
+</div>
+
+<div class="row g-3">
+  <!-- UPLOAD -->
+  <div class="col-lg-5">
+    <div class="glass-card fade-up">
+      <div style="font-size:13px; font-weight:600; margin-bottom:16px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Upload Leaf Image</div>
+
+      <div id="dropzone"
+        style="border:2px dashed var(--border); border-radius:14px; padding:40px 20px;
+               text-align:center; cursor:pointer; transition:all 0.2s; margin-bottom:16px;"
+        onclick="document.getElementById('fileInput').click()"
+        ondragover="handleDragOver(event)"
+        ondrop="handleDrop(event)">
+        <div id="dropContent">
+          <div style="font-size:48px; margin-bottom:12px;">📷</div>
+          <div style="font-size:14px; font-weight:600; margin-bottom:6px;">Drop image here</div>
+          <div style="font-size:12px; color:var(--text-muted);">or click to browse · JPG, PNG, WEBP</div>
+        </div>
+        <img id="previewImg" src="" alt="Preview"
+          style="display:none; max-width:100%; max-height:240px; border-radius:10px; object-fit:contain;" />
+      </div>
+
+      <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFileSelect(event)" />
+
+      <div style="display:flex; gap:10px;">
+        <button class="btn-green" id="analyzeBtn" onclick="analyzeDisease()" style="flex:1;" disabled>
+          <i class="fas fa-microscope me-2"></i>Analyze Disease
+        </button>
+        <button class="btn-outline-green" onclick="resetDisease()">Reset</button>
+      </div>
+    </div>
+
+    <!-- DISEASE CLASSES -->
+    <div class="glass-card mt-3 fade-up" style="animation-delay:0.1s;">
+      <div style="font-size:13px; font-weight:600; margin-bottom:14px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Detectable Diseases</div>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        {% set diseases = [
+          ('Bacterial Spot', '#e74c3c'),('Early Blight', '#e67e22'),('Late Blight', '#c0392b'),
+          ('Leaf Mold', '#f39c12'),('Septoria Leaf Spot', '#d35400'),('Spider Mites', '#e74c3c'),
+          ('Target Spot', '#e67e22'),('Yellow Leaf Curl Virus', '#c0392b'),
+          ('Mosaic Virus', '#e74c3c'),('Healthy ✓', '#27ae60')
+        ] %}
+        {% for name, color in diseases %}
+        <div style="display:flex; align-items:center; gap:8px; font-size:12px; padding:4px 0;">
+          <div style="width:8px; height:8px; border-radius:50%; background:{{ color }}; flex-shrink:0;"></div>
+          <span style="color:var(--text-muted);">{{ name }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="col-lg-7">
+    <div id="loadingSection" style="display:none;">
+      <div class="glass-card" style="text-align:center; padding:60px;">
+        <div class="spinner-green" style="margin:0 auto 16px;"></div>
+        <div style="font-size:14px; color:var(--text-muted);">Analyzing leaf image with ResNet50...</div>
+      </div>
+    </div>
+
+    <div id="resultSection" style="display:none;" class="fade-up">
+      <!-- Main Result -->
+      <div class="glass-card mb-3" id="mainResult">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+          <div>
+            <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Diagnosis</div>
+            <div id="diseaseName" style="font-size:20px; font-weight:800; line-height:1.2;"></div>
+          </div>
+          <div style="text-align:right;">
+            <div id="severityBadge"></div>
+            <div id="confidenceVal" style="font-size:28px; font-weight:800; color:var(--green-bright); margin-top:4px;"></div>
+            <div style="font-size:10px; color:var(--text-muted);">confidence</div>
+          </div>
+        </div>
+
+        <div id="confidenceBar" class="progress-bar-green mb-3">
+          <div class="fill" id="confidenceFill" style="width:0%"></div>
+        </div>
+
+        <div id="diseaseDesc" style="font-size:13px; color:var(--text-muted); line-height:1.7; padding:14px; background:rgba(255,255,255,0.03); border-radius:10px;"></div>
+      </div>
+
+      <!-- Top 3 -->
+      <div class="glass-card mb-3">
+        <div style="font-size:13px; font-weight:600; margin-bottom:14px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Top Predictions</div>
+        <div id="top3Container" style="display:flex; flex-direction:column; gap:10px;"></div>
+      </div>
+
+      <!-- Groq Recommendations -->
+      <div class="glass-card" id="recommendationCard">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+          <div style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">AI Treatment Recommendation</div>
+          <button class="btn-outline-green" onclick="getGroqRecommendation()" id="groqBtn" style="padding:6px 16px; font-size:12px;">
+            <i class="fas fa-robot me-1"></i>Get AI Advice
+          </button>
+        </div>
+        <div id="groqResult" style="font-size:13px; color:var(--text-muted); line-height:1.8;"></div>
+      </div>
+    </div>
+
+    <!-- Placeholder -->
+    <div id="placeholderSection" class="glass-card" style="text-align:center; padding:60px;">
+      <div style="font-size:64px; margin-bottom:16px;">🔬</div>
+      <div style="font-size:15px; font-weight:600; margin-bottom:8px;">Ready for Analysis</div>
+      <div style="font-size:13px; color:var(--text-muted);">Upload a tomato leaf image to begin diagnosis</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let selectedFile = null;
+let currentDisease = null;
+
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('dropzone').style.borderColor = 'var(--green-bright)';
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropzone').style.borderColor = 'var(--border)';
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadFile(file);
+}
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) loadFile(file);
+}
+
+function loadFile(file) {
+  selectedFile = file;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('previewImg').src = e.target.result;
+    document.getElementById('previewImg').style.display = 'block';
+    document.getElementById('dropContent').style.display = 'none';
+    document.getElementById('analyzeBtn').disabled = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetDisease() {
+  selectedFile = null;
+  document.getElementById('fileInput').value = '';
+  document.getElementById('previewImg').style.display = 'none';
+  document.getElementById('dropContent').style.display = 'block';
+  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('resultSection').style.display = 'none';
+  document.getElementById('placeholderSection').style.display = 'block';
+  document.getElementById('groqResult').innerHTML = '';
+}
+
+async function analyzeDisease() {
+  if (!selectedFile) return;
+  document.getElementById('placeholderSection').style.display = 'none';
+  document.getElementById('resultSection').style.display = 'none';
+  document.getElementById('loadingSection').style.display = 'block';
+
+  const formData = new FormData();
+  formData.append('image', selectedFile);
+
+  try {
+    const res = await fetch('/api/predict-disease', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (data.error) { showToast(data.error, 'error'); return; }
+
+    currentDisease = data.disease;
+    renderResult(data);
+  } catch(e) {
+    showToast('Analysis failed: ' + e.message, 'error');
+  } finally {
+    document.getElementById('loadingSection').style.display = 'none';
+    document.getElementById('resultSection').style.display = 'block';
+  }
+}
+
+function renderResult(data) {
+  const name = data.disease.replace(/_/g,' ').replace('Tomato ','');
+  document.getElementById('diseaseName').textContent = name;
+  document.getElementById('confidenceVal').textContent = data.confidence.toFixed(1) + '%';
+  document.getElementById('confidenceFill').style.width = data.confidence + '%';
+  document.getElementById('diseaseDesc').textContent = data.description;
+
+  const sev = data.severity;
+  const sevColors = { None:'var(--green-bright)', Low:'#3498db', Medium:'var(--gold)', High:'#e67e22', Critical:'#e74c3c' };
+  document.getElementById('severityBadge').innerHTML =
+    `<span style="background:${sevColors[sev] || '#e67e22'}22; color:${sevColors[sev]}; border-radius:6px; padding:4px 12px; font-size:11px; font-weight:700;">${sev} Risk</span>`;
+
+  const top3 = document.getElementById('top3Container');
+  top3.innerHTML = '';
+  data.top3.forEach((item, i) => {
+    const n = item.name.replace(/_/g,' ').replace('Tomato ','');
+    top3.innerHTML += `
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div style="width:22px; height:22px; border-radius:50%; background:rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0;">${i+1}</div>
+        <div style="flex:1;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <span style="font-size:12px; font-weight:500;">${n}</span>
+            <span style="font-size:12px; font-weight:700; color:var(--green-bright);">${item.confidence.toFixed(1)}%</span>
+          </div>
+          <div class="progress-bar-green"><div class="fill" style="width:${item.confidence}%"></div></div>
+        </div>
+      </div>`;
+  });
+}
+
+async function getGroqRecommendation() {
+  if (!currentDisease) return;
+  const btn = document.getElementById('groqBtn');
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+  btn.disabled = true;
+  document.getElementById('groqResult').innerHTML = '<span style="color:var(--text-muted);">Generating AI recommendation...</span>';
+
+  try {
+    const res = await fetch('/api/fertilizer-recommendation', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        crop: 'Tomato',
+        issue: currentDisease.replace(/_/g,' '),
+        soil_n: 80, soil_p: 40, soil_k: 40, ph: 6.5, area: '1 acre'
+      })
+    });
+    const data = await res.json();
+    if (data.error) { document.getElementById('groqResult').textContent = data.error; return; }
+
+    let html = '';
+    if (data.summary) html += `<p style="margin-bottom:12px;">${data.summary}</p>`;
+    if (data.precautions && data.precautions.length) {
+      html += `<div style="font-weight:600; margin-bottom:6px; font-size:12px; color:var(--green-bright);">PRECAUTIONS</div>`;
+      data.precautions.forEach(p => html += `<div style="padding:4px 0; font-size:12px;">• ${p}</div>`);
+    }
+    document.getElementById('groqResult').innerHTML = html;
+  } catch(e) {
+    document.getElementById('groqResult').textContent = 'Failed to get recommendation.';
+  } finally {
+    btn.innerHTML = '<i class="fas fa-robot me-1"></i>Refresh';
+    btn.disabled = false;
+  }
+}
+</script>
+{% endblock %}

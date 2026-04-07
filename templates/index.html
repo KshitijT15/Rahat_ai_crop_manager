@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Rahat-AI{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div class="page-title">
+    <h1>Farm Dashboard 🌾</h1>
+    <p>AI-powered crop intelligence for Indian farmers</p>
+  </div>
+  <div class="topbar-actions">
+    <span class="badge-green">Beta v1.0</span>
+  </div>
+</div>
+
+<!-- STAT CARDS -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="stat-card fade-up">
+      <div class="stat-icon" style="background:rgba(46,204,113,0.15); color:var(--green-bright);">
+        <i class="fas fa-microscope"></i>
+      </div>
+      <div>
+        <div class="stat-value">10</div>
+        <div class="stat-label">Disease Classes</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card fade-up" style="animation-delay:0.08s">
+      <div class="stat-icon" style="background:rgba(240,192,64,0.15); color:var(--gold);">
+        <i class="fas fa-chart-line"></i>
+      </div>
+      <div>
+        <div class="stat-value" style="color:var(--gold)">7d</div>
+        <div class="stat-label">Price Forecast Window</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card fade-up" style="animation-delay:0.16s">
+      <div class="stat-icon" style="background:rgba(52,152,219,0.15); color:#3498db;">
+        <i class="fas fa-seedling"></i>
+      </div>
+      <div>
+        <div class="stat-value" style="color:#3498db">22</div>
+        <div class="stat-label">Crop Varieties</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card fade-up" style="animation-delay:0.24s">
+      <div class="stat-icon" style="background:rgba(155,89,182,0.15); color:#9b59b6;">
+        <i class="fas fa-robot"></i>
+      </div>
+      <div>
+        <div class="stat-value" style="color:#9b59b6">AI</div>
+        <div class="stat-label">Fertilizer Advisor</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURE CARDS -->
+<div class="row g-3">
+  <div class="col-md-6 col-lg-4">
+    <a href="/disease" style="text-decoration:none">
+      <div class="glass-card fade-up" style="animation-delay:0.1s; cursor:pointer;">
+        <div style="font-size:36px; margin-bottom:14px;">🍅</div>
+        <div style="font-size:15px; font-weight:700; margin-bottom:8px;">Disease Detection</div>
+        <div style="font-size:12px; color:var(--text-muted); line-height:1.6; margin-bottom:16px;">
+          Upload a tomato leaf image and get instant AI diagnosis using ResNet50. Identifies 10 disease classes with confidence scores.
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <span class="badge-green">ResNet50</span>
+          <span class="badge-green">10 Classes</span>
+          <span class="badge-green">Real-time</span>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-6 col-lg-4">
+    <a href="/price" style="text-decoration:none">
+      <div class="glass-card fade-up" style="animation-delay:0.18s; cursor:pointer;">
+        <div style="font-size:36px; margin-bottom:14px;">📈</div>
+        <div style="font-size:15px; font-weight:700; margin-bottom:8px;">Price Forecasting</div>
+        <div style="font-size:12px; color:var(--text-muted); line-height:1.6; margin-bottom:16px;">
+          Predict tomato market prices for any date. Get min, average & max prices in INR/Quintal with 7-day trend charts.
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <span class="badge-yellow">ML Model</span>
+          <span class="badge-yellow">7-day Trend</span>
+          <span class="badge-yellow">INR/Quintal</span>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-6 col-lg-4">
+    <a href="/crop" style="text-decoration:none">
+      <div class="glass-card fade-up" style="animation-delay:0.26s; cursor:pointer;">
+        <div style="font-size:36px; margin-bottom:14px;">🌾</div>
+        <div style="font-size:15px; font-weight:700; margin-bottom:8px;">Crop Recommender</div>
+        <div style="font-size:12px; color:var(--text-muted); line-height:1.6; margin-bottom:16px;">
+          Input NPK, pH, temperature, humidity & rainfall to get the best crop recommendation for your soil conditions.
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <span style="background:rgba(52,152,219,0.15); color:#3498db; border-radius:6px; padding:4px 10px; font-size:11px; font-weight:600;">NPK Analysis</span>
+          <span style="background:rgba(52,152,219,0.15); color:#3498db; border-radius:6px; padding:4px 10px; font-size:11px; font-weight:600;">22 Crops</span>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-6 col-lg-4">
+    <a href="/fertilizer" style="text-decoration:none">
+      <div class="glass-card fade-up" style="animation-delay:0.34s; cursor:pointer;">
+        <div style="font-size:36px; margin-bottom:14px;">🧪</div>
+        <div style="font-size:15px; font-weight:700; margin-bottom:8px;">Fertilizer AI</div>
+        <div style="font-size:12px; color:var(--text-muted); line-height:1.6; margin-bottom:16px;">
+          Get personalized fertilizer recommendations powered by Groq AI (LLaMA 3). Includes organic options & application schedules.
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <span style="background:rgba(155,89,182,0.15); color:#9b59b6; border-radius:6px; padding:4px 10px; font-size:11px; font-weight:600;">Groq AI</span>
+          <span style="background:rgba(155,89,182,0.15); color:#9b59b6; border-radius:6px; padding:4px 10px; font-size:11px; font-weight:600;">LLaMA 3</span>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-6 col-lg-4">
+    <a href="/weather" style="text-decoration:none">
+      <div class="glass-card fade-up" style="animation-delay:0.42s; cursor:pointer;">
+        <div style="font-size:36px; margin-bottom:14px;">⛅</div>
+        <div style="font-size:15px; font-weight:700; margin-bottom:8px;">Weather & Advisory</div>
+        <div style="font-size:12px; color:var(--text-muted); line-height:1.6; margin-bottom:16px;">
+          Real-time weather data + AI-generated crop advisory. 5-day forecast with farming-specific recommendations.
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <span style="background:rgba(231,76,60,0.15); color:#e74c3c; border-radius:6px; padding:4px 10px; font-size:11px; font-weight:600;">OpenWeather</span>
+          <span style="background:rgba(231,76,60,0.15); color:#e74c3c; border-radius:6px; padding:4px 10px; font-size:11px; font-weight:600;">5-day Forecast</span>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-6 col-lg-4">
+    <div class="glass-card fade-up" style="animation-delay:0.5s; border-color:rgba(240,192,64,0.2);">
+      <div style="font-size:36px; margin-bottom:14px;">🇮🇳</div>
+      <div style="font-size:15px; font-weight:700; margin-bottom:8px;">Built for India</div>
+      <div style="font-size:12px; color:var(--text-muted); line-height:1.6; margin-bottom:16px;">
+        Trained on Indian agricultural datasets. Supports local market pricing, regional crops, and soil conditions specific to India.
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <span class="badge-yellow">Indian Markets</span>
+        <span class="badge-yellow">HF Spaces</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TECH STACK -->
+<div class="glass-card mt-3 fade-up" style="animation-delay:0.55s;">
+  <div style="font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:16px;">Technology Stack</div>
+  <div style="display:flex; flex-wrap:wrap; gap:10px;">
+    {% for tech, color in [('Flask', '#e74c3c'), ('TensorFlow', '#ff6f00'), ('scikit-learn', '#f7931e'), ('Groq AI', '#9b59b6'), ('Bootstrap 5', '#7952b3'), ('OpenWeather API', '#3498db'), ('Hugging Face', '#ffd21e'), ('Docker', '#2496ed'), ('ResNet50', '#27ae60')] %}
+    <span style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:6px 14px; font-size:12px; font-weight:500; color:{{ color }};">
+      {{ tech }}
+    </span>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

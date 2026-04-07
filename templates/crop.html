@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}Crop Recommender — Rahat-AI{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div class="page-title">
+    <h1>🌾 Crop Recommender</h1>
+    <p>Enter soil & climate parameters to get the best crop for your farm</p>
+  </div>
+  <span style="background:rgba(52,152,219,0.15); color:#3498db; border-radius:6px; padding:4px 12px; font-size:11px; font-weight:600;">22 Crop Varieties</span>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="glass-card fade-up">
+      <div style="font-size:13px; font-weight:600; margin-bottom:18px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Soil Parameters</div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-4">
+          <label class="form-label">Nitrogen (N)</label>
+          <input type="number" class="form-control" id="inp_N" placeholder="90" min="0" max="200" value="90" />
+          <div style="font-size:10px; color:var(--text-muted); margin-top:4px;">kg/ha</div>
+        </div>
+        <div class="col-4">
+          <label class="form-label">Phosphorus (P)</label>
+          <input type="number" class="form-control" id="inp_P" placeholder="42" min="0" max="200" value="42" />
+          <div style="font-size:10px; color:var(--text-muted); margin-top:4px;">kg/ha</div>
+        </div>
+        <div class="col-4">
+          <label class="form-label">Potassium (K)</label>
+          <input type="number" class="form-control" id="inp_K" placeholder="43" min="0" max="200" value="43" />
+          <div style="font-size:10px; color:var(--text-muted); margin-top:4px;">kg/ha</div>
+        </div>
+      </div>
+
+      <div style="font-size:13px; font-weight:600; margin-bottom:14px; margin-top:4px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Climate Parameters</div>
+
+      <div class="row g-3">
+        <div class="col-6">
+          <label class="form-label">Temperature</label>
+          <input type="number" class="form-control" id="inp_temp" placeholder="20.8" step="0.1" value="20.8" />
+          <div style="font-size:10px; color:var(--text-muted); margin-top:4px;">°C</div>
+        </div>
+        <div class="col-6">
+          <label class="form-label">Humidity</label>
+          <input type="number" class="form-control" id="inp_humidity" placeholder="82" min="0" max="100" value="82" />
+          <div style="font-size:10px; color:var(--text-muted); margin-top:4px;">%</div>
+        </div>
+        <div class="col-6">
+          <label class="form-label">Soil pH</label>
+          <input type="number" class="form-control" id="inp_ph" placeholder="6.5" step="0.1" min="0" max="14" value="6.5" />
+        </div>
+        <div class="col-6">
+          <label class="form-label">Rainfall</label>
+          <input type="number" class="form-control" id="inp_rainfall" placeholder="202" value="202" />
+          <div style="font-size:10px; color:var(--text-muted); margin-top:4px;">mm</div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:20px;">
+        <button class="btn-green" style="flex:1;" onclick="recommendCrop()" id="cropBtn">
+          <i class="fas fa-seedling me-2"></i>Recommend Crop
+        </button>
+        <button class="btn-outline-green" onclick="autoFill()">Auto-fill</button>
+      </div>
+    </div>
+
+    <!-- Quick Presets -->
+    <div class="glass-card mt-3 fade-up" style="animation-delay:0.1s;">
+      <div style="font-size:13px; font-weight:600; margin-bottom:14px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Quick Presets</div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        {% set presets = [
+          ('🌧️ Tropical Humid', 'N=90,P=42,K=43,T=25,H=85,pH=6.5,R=250'),
+          ('☀️ Dry Arid', 'N=60,P=55,K=44,T=35,H=20,pH=7.5,R=50'),
+          ('🌤️ Semi-arid', 'N=80,P=47,K=40,T=28,H=52,pH=7.0,R=100'),
+          ('❄️ Cool Climate', 'N=70,P=38,K=35,T=15,H=65,pH=6.0,R=150')
+        ] %}
+        {% for name, values in presets %}
+        <button onclick="applyPreset('{{ values }}')"
+          style="text-align:left; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:8px; padding:10px 14px; color:var(--cream); font-size:12px; cursor:pointer; transition:all 0.2s; font-family:'Sora',sans-serif;"
+          onmouseover="this.style.borderColor='rgba(46,204,113,0.4)'"
+          onmouseout="this.style.borderColor='var(--border)'">
+          {{ name }}
+          <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">{{ values }}</div>
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <!-- Loading -->
+    <div id="cropLoading" style="display:none;">
+      <div class="glass-card" style="text-align:center; padding:60px;">
+        <div class="spinner-green" style="margin:0 auto 16px;"></div>
+        <div style="font-size:14px; color:var(--text-muted);">Analyzing soil parameters...</div>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div id="cropResult" style="display:none;" class="fade-up">
+      <div class="glass-card mb-3">
+        <div style="text-align:center; padding:20px 0 10px;">
+          <div id="cropEmoji" style="font-size:72px; margin-bottom:8px;"></div>
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:2px; margin-bottom:6px;">Recommended Crop</div>
+          <div id="cropName" style="font-size:32px; font-weight:800; color:var(--green-bright); text-transform:capitalize;"></div>
+          <div id="cropNote" style="font-size:13px; color:var(--text-muted); margin-top:8px;"></div>
+        </div>
+      </div>
+
+      <div class="glass-card mb-3">
+        <div style="font-size:13px; font-weight:600; margin-bottom:16px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Top 5 Crop Matches</div>
+        <div id="top5Container" style="display:flex; flex-direction:column; gap:10px;"></div>
+      </div>
+
+      <div class="glass-card">
+        <div style="font-size:13px; font-weight:600; margin-bottom:14px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Input Summary</div>
+        <div class="row g-2" id="inputSummary"></div>
+      </div>
+    </div>
+
+    <!-- Placeholder -->
+    <div id="cropPlaceholder" class="glass-card" style="text-align:center; padding:80px 40px;">
+      <div style="font-size:64px; margin-bottom:16px;">🌱</div>
+      <div style="font-size:15px; font-weight:600; margin-bottom:8px;">Soil Analysis Ready</div>
+      <div style="font-size:13px; color:var(--text-muted);">Enter soil and climate parameters to get crop recommendation</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const cropEmojis = {
+  rice:'🌾', maize:'🌽', chickpea:'🫘', kidneybeans:'🫘', pigeonpeas:'🫘',
+  mothbeans:'🌿', mungbean:'🌱', blackgram:'🫘', lentil:'🫘', pomegranate:'🍎',
+  banana:'🍌', mango:'🥭', grapes:'🍇', watermelon:'🍉', muskmelon:'🍈',
+  apple:'🍏', orange:'🍊', papaya:'🍈', coconut:'🥥', cotton:'☁️',
+  jute:'🌾', coffee:'☕'
+};
+
+async function recommendCrop() {
+  const payload = {
+    N: parseFloat(document.getElementById('inp_N').value),
+    P: parseFloat(document.getElementById('inp_P').value),
+    K: parseFloat(document.getElementById('inp_K').value),
+    temperature: parseFloat(document.getElementById('inp_temp').value),
+    humidity: parseFloat(document.getElementById('inp_humidity').value),
+    ph: parseFloat(document.getElementById('inp_ph').value),
+    rainfall: parseFloat(document.getElementById('inp_rainfall').value)
+  };
+
+  for (const [k, v] of Object.entries(payload)) {
+    if (isNaN(v)) { showToast(`Invalid value for ${k}`, 'error'); return; }
+  }
+
+  document.getElementById('cropPlaceholder').style.display = 'none';
+  document.getElementById('cropResult').style.display = 'none';
+  document.getElementById('cropLoading').style.display = 'block';
+
+  try {
+    const res = await fetch('/api/recommend-crop', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.error) { showToast(data.error, 'error'); return; }
+
+    renderCropResult(data);
+  } catch(e) {
+    showToast('Recommendation failed', 'error');
+  } finally {
+    document.getElementById('cropLoading').style.display = 'none';
+    document.getElementById('cropResult').style.display = 'block';
+  }
+}
+
+function renderCropResult(data) {
+  const crop = data.recommended_crop;
+  document.getElementById('cropEmoji').textContent = cropEmojis[crop.toLowerCase()] || '🌿';
+  document.getElementById('cropName').textContent = crop;
+  document.getElementById('cropNote').textContent = `Best suited for your current soil & climate conditions`;
+
+  const top5 = document.getElementById('top5Container');
+  top5.innerHTML = data.top5.map((item, i) => `
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div style="width:26px; text-align:center; font-size:14px;">${cropEmojis[item.crop.toLowerCase()] || '🌿'}</div>
+      <div style="flex:1;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+          <span style="font-size:13px; font-weight:${i===0?700:500}; text-transform:capitalize; color:${i===0?'var(--green-bright)':'var(--cream)'};">${item.crop}</span>
+          <span style="font-size:13px; font-weight:700; color:${i===0?'var(--green-bright)':'var(--text-muted)'};">${item.confidence.toFixed(1)}%</span>
+        </div>
+        <div class="progress-bar-green"><div class="fill" style="width:${item.confidence}%; background:${i===0?'linear-gradient(90deg,var(--green-mid),var(--green-bright))':'rgba(255,255,255,0.2)'}"></div></div>
+      </div>
+    </div>`).join('');
+
+  const inp = data.input_summary;
+  const summary = [
+    {label:'N', val: inp.N + ' kg/ha', color:'#3498db'},
+    {label:'P', val: inp.P + ' kg/ha', color:'#e67e22'},
+    {label:'K', val: inp.K + ' kg/ha', color:'#9b59b6'},
+    {label:'Temp', val: inp.temperature + '°C', color:'#e74c3c'},
+    {label:'Humidity', val: inp.humidity + '%', color:'#1abc9c'},
+    {label:'pH', val: inp.ph, color:'#f39c12'},
+    {label:'Rainfall', val: inp.rainfall + 'mm', color:'#3498db'}
+  ];
+  document.getElementById('inputSummary').innerHTML = summary.map(s => `
+    <div class="col-6 col-md-3">
+      <div style="background:rgba(255,255,255,0.03); border-radius:10px; padding:12px; text-align:center;">
+        <div style="font-size:10px; color:${s.color}; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">${s.label}</div>
+        <div style="font-size:14px; font-weight:700;">${s.val}</div>
+      </div>
+    </div>`).join('');
+}
+
+function autoFill() {
+  const samples = [
+    [90,42,43,20.8,82,6.5,202],
+    [60,55,44,28,65,7.0,100],
+    [80,40,50,22,90,5.8,300],
+    [100,20,20,30,40,8.0,50]
+  ];
+  const s = samples[Math.floor(Math.random() * samples.length)];
+  ['inp_N','inp_P','inp_K','inp_temp','inp_humidity','inp_ph','inp_rainfall']
+    .forEach((id, i) => document.getElementById(id).value = s[i]);
+  showToast('Sample values loaded!', 'info');
+}
+
+function applyPreset(values) {
+  const map = { N:'inp_N', P:'inp_P', K:'inp_K', T:'inp_temp', H:'inp_humidity', pH:'inp_ph', R:'inp_rainfall' };
+  values.split(',').forEach(part => {
+    const [k, v] = part.split('=');
+    if (map[k]) document.getElementById(map[k]).value = v;
+  });
+  showToast('Preset applied!', 'info');
+}
+</script>
+{% endblock %} 

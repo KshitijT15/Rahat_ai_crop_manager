@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+{% block title %}Price Forecast — Rahat-AI{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div class="page-title">
+    <h1>📈 Tomato Price Forecast</h1>
+    <p>Predict market prices with ML model trained on historical data</p>
+  </div>
+  <span class="badge-yellow">INR / Quintal</span>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-4">
+    <!-- Single Date -->
+    <div class="glass-card fade-up mb-3">
+      <div style="font-size:13px; font-weight:600; margin-bottom:16px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Single Date Prediction</div>
+      <div class="mb-3">
+        <label class="form-label">Select Date</label>
+        <input type="date" class="form-control" id="singleDate" />
+      </div>
+      <button class="btn-green" style="width:100%;" onclick="predictSingle()">
+        <i class="fas fa-calculator me-2"></i>Predict Price
+      </button>
+    </div>
+
+    <!-- Range -->
+    <div class="glass-card fade-up" style="animation-delay:0.1s">
+      <div style="font-size:13px; font-weight:600; margin-bottom:16px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">7-Day Forecast</div>
+      <div class="mb-3">
+        <label class="form-label">Start Date</label>
+        <input type="date" class="form-control" id="rangeDate" />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Number of Days</label>
+        <select class="form-select" id="rangeDays">
+          <option value="7">7 Days</option>
+          <option value="14">14 Days</option>
+          <option value="30">30 Days</option>
+        </select>
+      </div>
+      <button class="btn-green" style="width:100%;" onclick="predictRange()" id="rangeBtn">
+        <i class="fas fa-chart-area me-2"></i>Generate Forecast
+      </button>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <!-- Single Result -->
+    <div id="singleResult" style="display:none;" class="fade-up mb-3">
+      <div class="glass-card">
+        <div style="font-size:13px; font-weight:600; margin-bottom:20px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Price Prediction</div>
+        <div class="row g-3 mb-4">
+          <div class="col-4">
+            <div style="text-align:center; padding:16px; background:rgba(231,76,60,0.08); border-radius:12px; border:1px solid rgba(231,76,60,0.2);">
+              <div style="font-size:10px; color:#e74c3c; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Minimum</div>
+              <div id="minPrice" style="font-size:26px; font-weight:800; color:#e74c3c;"></div>
+              <div style="font-size:10px; color:var(--text-muted);">₹/Quintal</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div style="text-align:center; padding:16px; background:rgba(46,204,113,0.08); border-radius:12px; border:1px solid rgba(46,204,113,0.2);">
+              <div style="font-size:10px; color:var(--green-bright); font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Average</div>
+              <div id="avgPrice" style="font-size:26px; font-weight:800; color:var(--green-bright);"></div>
+              <div style="font-size:10px; color:var(--text-muted);">₹/Quintal</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div style="text-align:center; padding:16px; background:rgba(240,192,64,0.08); border-radius:12px; border:1px solid rgba(240,192,64,0.2);">
+              <div style="font-size:10px; color:var(--gold); font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Maximum</div>
+              <div id="maxPrice" style="font-size:26px; font-weight:800; color:var(--gold);"></div>
+              <div style="font-size:10px; color:var(--text-muted);">₹/Quintal</div>
+            </div>
+          </div>
+        </div>
+        <div id="singleDateLabel" style="text-align:center; font-size:12px; color:var(--text-muted);"></div>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div id="chartSection" style="display:none;" class="fade-up">
+      <div class="glass-card mb-3">
+        <div style="font-size:13px; font-weight:600; margin-bottom:16px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Price Trend Chart</div>
+        <canvas id="priceChart" height="200"></canvas>
+      </div>
+
+      <!-- Table -->
+      <div class="glass-card">
+        <div style="font-size:13px; font-weight:600; margin-bottom:16px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Detailed Forecast</div>
+        <div style="overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; font-size:13px;">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border);">
+                <th style="padding:10px 8px; color:var(--text-muted); font-weight:600; text-align:left;">Date</th>
+                <th style="padding:10px 8px; color:#e74c3c; font-weight:600; text-align:right;">Min ₹</th>
+                <th style="padding:10px 8px; color:var(--green-bright); font-weight:600; text-align:right;">Avg ₹</th>
+                <th style="padding:10px 8px; color:var(--gold); font-weight:600; text-align:right;">Max ₹</th>
+              </tr>
+            </thead>
+            <tbody id="priceTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Placeholder -->
+    <div id="pricePlaceholder" class="glass-card" style="text-align:center; padding:80px 40px;">
+      <div style="font-size:64px; margin-bottom:16px;">📊</div>
+      <div style="font-size:15px; font-weight:600; margin-bottom:8px;">Price Forecast Ready</div>
+      <div style="font-size:13px; color:var(--text-muted);">Select a date and click predict to see price predictions</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let priceChart = null;
+
+// Set default dates
+document.getElementById('singleDate').value = new Date().toISOString().split('T')[0];
+document.getElementById('rangeDate').value = new Date().toISOString().split('T')[0];
+
+async function predictSingle() {
+  const date = document.getElementById('singleDate').value;
+  if (!date) { showToast('Please select a date', 'error'); return; }
+
+  try {
+    const res = await fetch('/api/predict-price', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({date})
+    });
+    const data = await res.json();
+    if (data.error) { showToast(data.error, 'error'); return; }
+
+    document.getElementById('minPrice').textContent = '₹' + data.min_price.toLocaleString();
+    document.getElementById('avgPrice').textContent = '₹' + data.avg_price.toLocaleString();
+    document.getElementById('maxPrice').textContent = '₹' + data.max_price.toLocaleString();
+    document.getElementById('singleDateLabel').textContent = `Prediction for ${new Date(date).toLocaleDateString('en-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'})}`;
+
+    document.getElementById('pricePlaceholder').style.display = 'none';
+    document.getElementById('singleResult').style.display = 'block';
+    showToast('Price predicted successfully!');
+  } catch(e) {
+    showToast('Prediction failed', 'error');
+  }
+}
+
+async function predictRange() {
+  const start_date = document.getElementById('rangeDate').value;
+  const days = document.getElementById('rangeDays').value;
+  if (!start_date) { showToast('Please select a start date', 'error'); return; }
+
+  const btn = document.getElementById('rangeBtn');
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/predict-price-range', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({start_date, days: parseInt(days)})
+    });
+    const data = await res.json();
+    if (data.error) { showToast(data.error, 'error'); return; }
+
+    renderChart(data.predictions);
+    renderTable(data.predictions);
+
+    document.getElementById('pricePlaceholder').style.display = 'none';
+    document.getElementById('chartSection').style.display = 'block';
+    showToast(`${days}-day forecast generated!`);
+  } catch(e) {
+    showToast('Forecast failed', 'error');
+  } finally {
+    btn.innerHTML = '<i class="fas fa-chart-area me-2"></i>Generate Forecast';
+    btn.disabled = false;
+  }
+}
+
+function renderChart(predictions) {
+  const labels = predictions.map(p => {
+    const d = new Date(p.date);
+    return d.toLocaleDateString('en-IN', {month:'short', day:'numeric'});
+  });
+
+  if (priceChart) priceChart.destroy();
+  const ctx = document.getElementById('priceChart').getContext('2d');
+  priceChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Max Price',
+          data: predictions.map(p => p.max_price),
+          borderColor: '#f0c040',
+          backgroundColor: 'rgba(240,192,64,0.05)',
+          tension: 0.4, fill: false, pointRadius: 4
+        },
+        {
+          label: 'Avg Price',
+          data: predictions.map(p => p.avg_price),
+          borderColor: '#2ecc71',
+          backgroundColor: 'rgba(46,204,113,0.1)',
+          tension: 0.4, fill: true, pointRadius: 5, borderWidth: 2.5
+        },
+        {
+          label: 'Min Price',
+          data: predictions.map(p => p.min_price),
+          borderColor: '#e74c3c',
+          backgroundColor: 'rgba(231,76,60,0.05)',
+          tension: 0.4, fill: false, pointRadius: 4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { labels: { color: '#7a9e8a', font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { color: '#7a9e8a', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: {
+          ticks: {
+            color: '#7a9e8a', font: { size: 11 },
+            callback: v => '₹' + v.toLocaleString()
+          },
+          grid: { color: 'rgba(255,255,255,0.04)' }
+        }
+      }
+    }
+  });
+}
+
+function renderTable(predictions) {
+  const tbody = document.getElementById('priceTableBody');
+  tbody.innerHTML = predictions.map((p, i) => {
+    const d = new Date(p.date);
+    const dayName = d.toLocaleDateString('en-IN', {weekday:'short'});
+    const dateStr = d.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+    return `
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.04); ${i%2===0?'background:rgba(255,255,255,0.01)':''}">
+        <td style="padding:10px 8px;">${dayName}, ${dateStr}</td>
+        <td style="padding:10px 8px; text-align:right; color:#e74c3c; font-weight:600;">₹${p.min_price.toLocaleString()}</td>
+        <td style="padding:10px 8px; text-align:right; color:var(--green-bright); font-weight:700;">₹${p.avg_price.toLocaleString()}</td>
+        <td style="padding:10px 8px; text-align:right; color:var(--gold); font-weight:600;">₹${p.max_price.toLocaleString()}</td>
+      </tr>`;
+  }).join('');
+}
+</script>
+{% endblock %}
