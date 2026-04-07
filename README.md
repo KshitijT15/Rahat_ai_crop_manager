@@ -27,13 +27,37 @@
 
 ## 📸 Screenshots
 
-| Module | Preview |
-|---|---|
-| Weather & Advisory | Live weather data, 5-day forecast, and AI crop advisory for your city |
-| Disease Detection | Upload leaf → ResNet50 diagnosis → Treatment recommendation |
-| Price Forecast | ML price prediction with min/avg/max and trend chart |
-| Crop Recommender | Soil & climate parameters → Best crop match from 22 varieties |
-| Fertilizer AI | NPK deficiency detection → Fertilizer plan with application schedule |
+### 🏠 Dashboard & Weather Advisory
+![Weather & Advisory](screenshots/weather_advisory.png)
+> Real-time weather data for any city with 5-day forecast and AI crop advisory
+
+---
+
+### 🍃 Disease Detection
+![Disease Detection](screenshots/disease_detection.png)
+> Upload a tomato leaf image → ResNet50 diagnosis → AI treatment recommendation
+
+---
+
+### 📊 Tomato Price Forecast
+![Price Forecast](screenshots/price_forecast.png)
+> ML-powered price prediction with min/avg/max values and 7-day trend chart
+
+---
+
+### 🌿 Crop Recommender
+![Crop Recommender](screenshots/crop_recommender.png)
+> Input soil & climate parameters to get the best crop match from 22 varieties
+
+---
+
+### 🧪 Fertilizer AI
+![Fertilizer AI](screenshots/fertilizer_ai.png)
+> Soil deficiency detection with fertilizer plan, application schedule, and cost estimate
+
+---
+
+> 💡 **To add screenshots:** Place your images in a `/screenshots` folder in the repo root and name them as referenced above.
 
 ---
 
@@ -43,7 +67,7 @@
 - **AI/ML Models:**
   - ResNet50 — Tomato disease classification (10 classes)
   - ML regression model — Tomato price forecasting
-  - Claude API (Anthropic) — Natural language advisory & recommendations
+  - Grok API (xAI) — Natural language advisory & recommendations
 - **APIs:**
   - OpenWeather API — Real-time weather & 5-day forecast
 - **Styling:** Tailwind CSS / custom dark theme
@@ -57,7 +81,7 @@
 - Node.js ≥ 18
 - Python ≥ 3.9 (if running ML model locally)
 - OpenWeather API key
-- Anthropic API key
+- Grok API key (xAI)
 
 ### 1. Clone the repository
 
@@ -78,11 +102,11 @@ Create a `.env.local` file in the root directory:
 
 ```env
 OPENWEATHER_API_KEY=your_openweather_api_key_here
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
+XAI_API_KEY=your_grok_api_key_here
 ```
 
 > Get your OpenWeather API key at [openweathermap.org](https://openweathermap.org/api)  
-> Get your Anthropic API key at [console.anthropic.com](https://console.anthropic.com)
+> Get your Grok API key at [console.x.ai](https://console.x.ai)
 
 ### 4. Run the development server
 
@@ -146,7 +170,7 @@ Rahat-AI
 - Real-time data: temperature, humidity, wind, cloud cover, visibility, pressure
 - Sunrise/sunset times
 - 5-day weather forecast
-- AI crop advisory: immediate actions, irrigation tips, pest/disease risk, harvest advice
+- AI crop advisory powered by **Grok (xAI)**: immediate actions, irrigation tips, pest/disease risk, harvest advice
 
 ---
 
@@ -208,7 +232,7 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for detai
 ## 🙏 Acknowledgements
 
 - [OpenWeather API](https://openweathermap.org/) for real-time weather data
-- [Anthropic Claude](https://www.anthropic.com/) for AI-powered advisory
+- [xAI Grok API](https://x.ai/) for AI-powered advisory & recommendations
 - [ResNet50](https://arxiv.org/abs/1512.03385) architecture for disease classification
 - All contributors and the open-source community
 
